@@ -6,7 +6,7 @@
 /*   By: agundry <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/01/06 11:55:42 by agundry           #+#    #+#             */
-/*   Updated: 2018/01/06 11:55:54 by agundry          ###   ########.fr       */
+/*   Updated: 2018/01/06 16:45:24 by agundry          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,12 +36,13 @@
 //
 //s-boxes, r-boxes, and p-boxes just static stack int arrays?????????
 
+#include "ft_ssl_des.h"
 #	define	SUBKEY_SEL(x, y) (y ? 16 - x : x)
 
 static int	rbox[] = 
 {
 	1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
-}
+};
 
 static int pc1box[] =
 {
@@ -49,7 +50,7 @@ static int pc1box[] =
 	1, 58, 50, 42, 34, 26, 18, 7, 62, 54, 46, 38, 30, 22,
 	10, 2, 59, 51, 43, 35, 27, 14, 6, 61, 53, 45, 37, 29,
 	19, 11, 3, 60, 52, 44, 36, 21, 13, 5, 28, 20, 12, 4
-}
+};
 
 static int	pc2box[] = 
 {
@@ -61,9 +62,9 @@ static int	pc2box[] =
 	30, 40, 51, 45, 33, 48,
 	44, 49, 39, 56, 34, 53,
 	46, 42, 50, 36, 29, 32
-}
+};
 
-static uint32_t sbox[][] = 
+static uint32_t sbox[8][64] = 
 {
 	{14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
 	0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
@@ -104,7 +105,7 @@ static uint32_t sbox[][] =
 	1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2,
 	7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
 	2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11}
-}
+};
 
 static int	ebox[] =
 {
@@ -116,7 +117,7 @@ static int	ebox[] =
 	20, 21, 22, 23, 24, 25,
 	24, 25, 26, 27, 28, 29,
 	28, 29, 30, 31, 32, 1
-}
+};
 
 static int	pbox[] =
 {
@@ -124,7 +125,7 @@ static int	pbox[] =
 	1, 15, 23, 26, 5, 18, 31, 10,
 	2, 8, 24, 14, 32, 27, 3, 9,
 	19, 13, 30, 6, 22, 11, 4, 25
-}
+};
 
 static int	ipbox[] =
 {
@@ -136,7 +137,7 @@ static int	ipbox[] =
 	59, 51, 43, 35, 27, 19, 11, 3,
 	61, 53, 45, 37, 29, 21, 13, 5,
 	63, 55, 47, 39, 31, 23, 15, 7
-}
+};
 
 static int	fpbox[] =
 {
@@ -148,82 +149,72 @@ static int	fpbox[] =
 	35, 3, 43, 11, 51, 19, 59, 27,
 	34, 2, 42, 10, 50, 18, 58, 26,
 	33, 1, 41, 9, 49, 17, 57, 25
-}
+};
 
-typedef	struct		s_des //moved to ssl??
-{
-	uint64_t		text;
-	uint64_t		key;
-	bool			flag; //will reference flag to establish order (decrypt = 0/encrypt = 1)
-}					t_des;
-
-typedef	struct		s_keys
-{
-	uint64_t		key;
-	uint64_t		pc1:56;
-	int				round;
-	uint64_t		keys[16];//????
-}					t_keys;
-
-int	init_des(t_des *des) //do this later, perhaps defer this to SSL, send the prepped data to this module
+/*int	init_des(t_des *des) //do this later, perhaps defer this to SSL, send the prepped data to this module
 {
 	get_key;
 	get_flag;
 	get_text;
-}
+}*/
 
 
 int key_rotate(t_keys *keys, int i)
 {
-	uint64_t	left:56;
-	uint64_t	right:56;
-	uint64_t	out:56;
+	t_dint	left;
+	t_dint	right;
+	t_dint	out;
 
-	right = keys->pc1;
-	left = keys->pc1 >> 28;
-	left = left << 28;
-	out += right << rbox[i];//
-	out += right >> 28 - rbox[i];
-	out += left << rbox[i];
-	out += left >> 28 - rbox[i];
-	keys->pc1 = out;
+	right._56 = keys->pc1;
+	left._56 = keys->pc1 >> 28;
+	left._56 = left._56 << 28;
+	out._56 += right._56 << rbox[i];//
+	out._56 += right._56 >> (28 - rbox[i]);
+	out._56 += left._56 << rbox[i];
+	out._56 += left._56 >> (28 - rbox[i]);
+	keys->pc1 = out._56;
+	return (1);
 }
 
 uint64_t	permute(uint64_t in, int size, int box[])
 {
 	int 		i = 0;
-	uint64_t	out : size = 0;
+	uint64_t	out;/////
+	int			tab;
 
-	while (tab = box[i])
+	out = 0;
+	while ((tab = box[i]))
 	{
 		if (in & (1 << (tab - 1)))
 			out += (1 << (i - 1));
 		i++;
 	}
-	return (out);
+	return (out << (64 - size) >> (64 - size)); ///////////////
 }
 
-t_keys	*generate_keys(t_des *des)
+void	generate_keys(t_keys *keys) //modify child fxns to take pointer to keys??
 {
-	t_keys		keys;
-
 	keys->round = 1;
-	keys->pc1 = key_permute(keys->key, 56, /*pc1box*/);
+	keys->pc1 = permute(keys->key, 56, pc1box); //need to make specific key_permute???
 	while (keys->round <= 16)
 	{
-		key_rotate(&keys, round);
-		keys->keys[keys->round] = key_permute(keys->pc1, 48, /*pc2box*/);
+		key_rotate(keys, keys->round);
+		keys->keys[keys->round] = permute(keys->pc1, 48, pc2box);
 	}
+	return ;
 }
 
-uint32_t	s_boxes(uint64_t in : 48)
+uint32_t	s_boxes(uint64_t in) //this math is all wrong now. make data type for these guys too?
 {
-	int 		i = 0;
-	int			tmp:6;
-	int			y:2 = 0;
-	int			x:4;
-	uint32_t	out = 0;
+	int 		i;
+	int			tmp;
+	int			y;
+	int			x;
+	uint32_t	out;
 
+	y = 0;
+	i = 0;
+	out = 0;
 	while (i++ < 8)
 	{
 		tmp = in >> (48 - (6 * i));
@@ -235,17 +226,17 @@ uint32_t	s_boxes(uint64_t in : 48)
 	return (out);
 }
 
-uint32_t	feistel(uint32_t right, t_keys *keys)
+uint32_t	feistel(uint32_t right, t_keys *keys)/// this needs worx
 {
-	uint64_t	subkey:48;
-	uint64_t	tmp:48;
+	t_dint		subkey;
+	t_dint		tmp;
 	uint32_t	out;
 
-	subkey = keys->keys[SUBKEY_SEL(keys->round, des->flag)] //macro will prolly be replaced by fxn and key gen will change and be per round to accomodate both modes of openSSL, "get_next_key" type fxn
-	tmp = permute(right, 48, /*ebox*/);
-	tmp = tmp ^ subkey;
-	out = s_boxes(tmp);
-	out = permute(out, 32, /*pbox*/);
+	subkey._48 = keys->keys[SUBKEY_SEL(keys->round, des->flag)];//macro will prolly be replaced by fxn and key gen will change and be per round to accomodate both modes of openSSL, "get_next_key" type fxn
+	tmp._48 = permute(right, 48, ebox);
+	tmp._48 = tmp._48 ^ subkey._48;
+	out = s_boxes(tmp._48);
+	out = permute(out, 32, pbox);
 }
 
 uint64_t	transform(t_des *des, t_keys *keys)
@@ -256,27 +247,27 @@ uint64_t	transform(t_des *des, t_keys *keys)
 	uint32_t	right;
 	uint32_t	tmp;
 
-	out = permute(des->text, 64, /*ipbox*/);
+	out = permute(des->text, 64, ipbox);
 	left = out >> 32;
 	right = out;
 	while ((keys->round = round) < 16)
 	{
 		tmp = right;
-		right = feistel(right, &keys);
+		right = feistel(right, keys);
 		right = left ^ right;
 		left = tmp;
 		round++;
 	}
 	out = left;
 	out = (out << 32) | right;
-	return (out = permute(out, 64, /*fpbox*/));
+	return (out = permute(out, 64, fpbox));
 }
 
 int	des(t_des *des)
 {
-	t_keys		*keys;
-	uint64_t	ret:48;
+	t_keys		keys;
+	t_dint		ret;
 
-	keys = generate_keys(&des);
-	return (ret = transform(&des, keys));
+	generate_keys(&keys);
+	return (ret._48 = transform(des, &keys));
 }

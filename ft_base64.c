@@ -6,7 +6,7 @@
 /*   By: agundry <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/01/06 11:55:34 by agundry           #+#    #+#             */
-/*   Updated: 2018/01/06 14:18:12 by agundry          ###   ########.fr       */
+/*   Updated: 2018/01/06 17:13:45 by agundry          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,12 +27,12 @@ static char	e_table[] = {
 static char		*d_table = NULL;
 static size_t	mod_table[] = {0, 2, 1};
 
-char	*bas64_encode(const unsigned char *data, size_t in_len, size_t *out_len)
+unsigned char	*base64_encode(const unsigned char *data, size_t in_len, size_t *out_len)
 {
-	uint32_t	octet[3];
-	uint32_t	triple;
-	char		*e_data;
-	size_t		i;
+	uint32_t		octet[3];
+	uint32_t		triple;
+	unsigned char	*e_data;
+	size_t			i;
 
 	i= 0;
 	*out_len = 4 * ((in_len + 2) / 3);
@@ -43,7 +43,7 @@ char	*bas64_encode(const unsigned char *data, size_t in_len, size_t *out_len)
 		octet[0] = i < in_len ? (unsigned char)data[i++] : 0;
 		octet[1] = i < in_len ? (unsigned char)data[i++] : 0;
 		octet[2] = i < in_len ? (unsigned char)data[i++] : 0;
-		triple = (octet[0] << 0x10) + (octet[1] << 0x80) + octet[2];
+		triple = (octet[0] << 0x10) + (octet[1] << 0x08) + octet[2];
 		e_data[i - 3] = e_table[(triple >> 18) & 0x3f];
 		e_data[i - 2] = e_table[(triple >> 12) & 0x3f];
 		e_data[i - 1] = e_table[(triple >> 6) & 0x3f];
@@ -55,7 +55,7 @@ char	*bas64_encode(const unsigned char *data, size_t in_len, size_t *out_len)
 	return (e_data);
 }
 
-unsigned char	*base64_decode(const char *data, size_t in_len, size_t *out_len)
+unsigned char	*base64_decode(const unsigned char *data, size_t in_len, size_t *out_len)
 {
 	uint32_t		sextet[4];
 	uint32_t		triple;
@@ -76,10 +76,10 @@ unsigned char	*base64_decode(const char *data, size_t in_len, size_t *out_len)
 	j = 0;
 	while (i < in_len)
 	{
-		sextet[0] = data[i] == '=' ? 0 & i++ : d_table[data[i++]];
-		sextet[1] = data[i] == '=' ? 0 & i++ : d_table[data[i++]];
-		sextet[2] = data[i] == '=' ? 0 & i++ : d_table[data[i++]];
-		sextet[3] = data[i] == '=' ? 0 & i++ : d_table[data[i++]];
+		sextet[0] = data[i] == '=' ? 0 & i++ : d_table[(unsigned char)data[i++]];
+		sextet[1] = data[i] == '=' ? 0 & i++ : d_table[(unsigned char)data[i++]];
+		sextet[2] = data[i] == '=' ? 0 & i++ : d_table[(unsigned char)data[i++]];
+		sextet[3] = data[i] == '=' ? 0 & i++ : d_table[(unsigned char)data[i++]];
 		triple = (sextet[0] << 18) + (sextet[1] << 12) + (sextet[2] << 6) + sextet[3];
 		if (j < *out_len)
 			d_data[j++] = (triple >> 16) & 0xFF;
@@ -96,7 +96,7 @@ void 	build_decoding_table()
 	size_t	i;
 
 	if (!(d_table = malloc(256)))
-		return (NULL);
+		return ;
 	i = 0;
 	while (i < 64)
 	{

@@ -6,7 +6,7 @@
 /*   By: agundry <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/01/06 11:56:01 by agundry           #+#    #+#             */
-/*   Updated: 2018/01/06 13:29:31 by agundry          ###   ########.fr       */
+/*   Updated: 2018/01/06 17:20:03 by agundry          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,19 +14,23 @@
 
 int	get_operation(char *in)
 {
-	!ft_strcmp(in, "base64") ? : return (0);
-	!ft_strcmp(in, "des") ? : return (1);
-	!ft_strcmp(in, "des-cbc") ? : return (2);
-	!ft_strcmp(in, "des-ebc") ? : return (3);
+	if (ft_strcmp(in, "base64"))
+		return (0);
+	if (ft_strcmp(in, "des"))
+		return (1);
+	if (ft_strcmp(in, "des-cbc"))
+		return (2);
+	if (ft_strcmp(in, "des-ebc"))
+		return (3);
 	return (-1);
 }
 
-char	*ssl_get_file(int fd)
+const unsigned char	*ssl_get_file(int fd)
 {
 	char	*ret;
 
 	get_file(fd, &ret);
-	return(ret);
+	return((const unsigned char*)ret);
 }
 
 int	ssl_base64(char **av)
@@ -35,28 +39,31 @@ int	ssl_base64(char **av)
 	size_t		i_len;
 	size_t		o_len;
 
-	ssl_getflags_base64(&av, &base64); //make a getflags for every group of fxn that uses same flags
+	ssl_getflags_base64(av, &base64); //make a getflags for every group of fxn that uses same flags
 	base64.in = base64.i ? ssl_get_file(base64.i) : ssl_get_file(0); //build wrapper here, then add to LIB
-	i_len = ft_strlen(base64.in);
+	i_len = ft_strlen((const char *)base64.in);
 	o_len = i_len; //set to zero?
-	base64.out = base64.d && !base64.e ? base64_decode(base64.in, &i_len, &o_len)
-		: base64_encode(base64.in, &i_len, &o_len); //might need to make encrypt more explicit
+	base64.out = base64.d && !base64.e ? base64_decode(base64.in, i_len, &o_len)
+		: base64_encode(base64.in, i_len, &o_len); //might need to make encrypt more explicit
 	if (base64.o)
 		write(base64.o, base64.out, o_len); //fetch filename
 	else
-		ft_printf(); //to stdout
+		ft_printf("%i", base64.out);
+	return (1); /////////// janky
 }
 
-int	ssl_des()
+int	ssl_des(char **av)
 {
 	t_des	des;
+	size_t	i_len;
+	size_t	o_len;
 	//flags
 	//input
 	//base64
 	//key
 	//enc / dec
 	//output
-	ssl_getflags_des(&av, &des);
+	ssl_getflags_des(av, &des);
 	des.in = des.i ? ssl_get_file(des.i): ssl_get_file(0);///read until EOF on stdin on false, needs fxn
 	//fetch password?!
 	!des.a ? : base64_decode(des.in); ///
@@ -64,12 +71,12 @@ int	ssl_des()
 		;
 	des.d ? des_decrypt() : des_encrypt();//make wrapper fxns or just reverse order of keygen? will depend on CBC EBC
 	!des.a ? : base64_encode(des.in); ////////
-	des.o ? write(des.o, ,) : write(0, , ); //to stdout
+	des.o ? write(des.o, des.out, o_len) : write(0, des.out, o_len);//to stdout
 }
 
 int	ssl_dispatch(char **av)
 {
-	static t_fc	fp[2]; //
+	static t_fp	fp[2]; //
 	size_t		i;
 
 	fp[0] = &ssl_base64; //
